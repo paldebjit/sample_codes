@@ -36,34 +36,37 @@ void default_function(float data[4608000], float label[4500], float theta[1024])
       gradient_x3: for (ap_int<32> x3 = 0; x3 < 1024; ++x3) {
         gradient[x3] = 0.000000e+00f;
       }
-      float scalar0;
-      scalar0_x4: for (ap_int<32> x4 = 0; x4 < 1; ++x4) {
-        scalar0 = -6.000000e+04f;
+      float scalar4;
+      scalar4_x4: for (ap_int<32> x4 = 0; x4 < 1; ++x4) {
+        scalar4 = -6.000000e+04f;
       }
-      float scalar1;
-      scalar1_x5: for (ap_int<32> x5 = 0; x5 < 1; ++x5) {
-        scalar1 = 0.000000e+00f;
+      float scalar5;
+      scalar5_x5: for (ap_int<32> x5 = 0; x5 < 1; ++x5) {
+        scalar5 = 0.000000e+00f;
       }
-      scalar1 = 5.000000e-01f;
-      float scalar2;
-      scalar2_x6: for (ap_int<32> x6 = 0; x6 < 1; ++x6) {
-        scalar2 = label_local[m1];
+      scalar5 = 5.000000e-01f;
+      float scalar6;
+      scalar6_x6: for (ap_int<32> x6 = 0; x6 < 1; ++x6) {
+        scalar6 = label_local[m1];
       }
-      float scalar3;
-      scalar3_x7: for (ap_int<32> x7 = 0; x7 < 1; ++x7) {
-        scalar3 = (scalar1 - scalar2);
+      float scalar7;
+      scalar7_x7: for (ap_int<32> x7 = 0; x7 < 1; ++x7) {
+        scalar7 = (scalar5 - scalar6);
       }
       GRAD: for (ap_int<32> GRAD = 0; GRAD < 3.200000e+01f; ++GRAD) {
         GRAD_INNER: for (ap_int<32> GRAD_INNER = 0; GRAD_INNER < 32; ++GRAD_INNER) {
-          gradient[((GRAD * 32) + GRAD_INNER)] = (scalar3 * training_instance[((GRAD * 32) + GRAD_INNER)]);
+          gradient[((GRAD * 32) + GRAD_INNER)] = (scalar7 * training_instance[((GRAD * 32) + GRAD_INNER)]);
         }
       }
       UPDATE: for (ap_int<32> UPDATE = 0; UPDATE < 3.200000e+01f; ++UPDATE) {
         UPDATE_INNER: for (ap_int<32> UPDATE_INNER = 0; UPDATE_INNER < 32; ++UPDATE_INNER) {
-          theta_local[((UPDATE * 32) + UPDATE_INNER)] = (theta_local[((UPDATE * 32) + UPDATE_INNER)] + (scalar0 * gradient[((UPDATE * 32) + UPDATE_INNER)]));
+          theta_local[((UPDATE * 32) + UPDATE_INNER)] = (theta_local[((UPDATE * 32) + UPDATE_INNER)] + (scalar4 * gradient[((UPDATE * 32) + UPDATE_INNER)]));
         }
       }
     }
+  }
+  i3: for (ap_int<32> i3 = 0; i3 < 1024; ++i3) {
+    theta[i3] = theta_local[i3];
   }
 }
 

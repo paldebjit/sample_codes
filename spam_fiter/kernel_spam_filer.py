@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import heterocl as hcl
 from config import *
 from lut import *
@@ -106,17 +107,68 @@ def top_spam_filer(dtype=hcl.Int(), target=None):
         # Repetatively run epoch function for # NUM_EPOCHS
         hcl.mutate((NUM_EPOCHS,), lambda m: epoch(theta_local, label_local, data), "EPOCH")
 
+        with hcl.for_(0, NUM_FEATURES, name="i") as i:
+            theta[i] = theta_local[i]
+
     s = hcl.create_schedule([data, label, theta], kernel_spam_filter)
     return hcl.build(s, target=target)
 
 
-os.makedirs('device', exist_ok=True)
-targets = ['vhls', 'aocl']
+def codegen():
+    os.makedirs('device', exist_ok=True)
+    targets = ['vhls', 'aocl']
+    
+    for target in targets:
+        f = top_spam_filer(dtype=hcl.Float(), target=target)
+        fp = open('device/kernel_' + target + '.cl', 'w')
+        fp.write(f)
+        fp.close()
 
-for target in targets:
-    f = top_spam_filer(dtype=hcl.Float(), target=target)
-    fp = open('device/kernel_' + target + '.cl', 'w')
-    fp.write(f)
-    fp.close()
+def test():
+    
+    Ddtype = hcl.Float()
+    Ldtype = hcl.Float()
+    Tdtype = hcl.Float()
+    
+    np_data = hcl.cast_np(np.loadtxt("data/shuffledfeats.dat"), Ddtype)
+    np_label = hcl.cast_np(np.loadtxt("data/shuffledlabels.dat"), Ldtype)
+    np_theta = hcl.cast_np(np.zeros((NUM_FEATURES,), dtype=float), Tdtype)
 
+    np_train_data = np_data[:NUM_FEATURES * NUM_TRAINING]
+    np_train_label = np_label[:NUM_TRAINING]
 
+    np_test_data = np_data[NUM_FEATURES * NUM_TRAINING:]
+    np_test_label = np_label[NUM_TRAINING:]
+
+    hcl_data = hcl.asarray(np_train_data, dtype=Ddtype)
+    hcl_label = hcl.asarray(np_label, dtype=Ldtype)
+    hcl_theta = hcl.asarray(np_theta, dtype=Tdtype)
+    
+    dtype = hcl.Float()
+    f = top_spam_filer(dtype)
+
+    f(hcl_data, hcl_label, hcl_theta)
+
+    theta_out = hcl_theta.asnumpy()
+    
+    #print(theta_out)
+
+    error = 0.0
+    for i in range(NUM_TESTING):
+        data = np_test_data[i * NUM_FEATURES : (i + 1) * NUM_FEATURES]
+        dot = 0.0
+        for j in range(NUM_FEATURES):
+            dot += data[j] * theta_out[j]
+        
+        result = 1.0 if dot > 0 else 0.0
+
+        #print("Result is: %f and np_test_label[%d] is: %f.\n" % (result, i, np_test_label[i]))
+
+        if result != np_test_label[i]:
+            error += 1.0
+
+    print("The average error is: %f.\n" % (error / NUM_TESTING))
+
+if __name__ == "__main__":
+    test()
+    codegen()

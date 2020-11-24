@@ -19,31 +19,34 @@ __kernel void default_function(__global float* restrict data, __global float* re
         training_instance[i2] = data[((m1 * 1024) + i2)];
       }
       float gradient[1024];
-      float scalar4;
+      float scalar8;
       for (int32_t x = 0; x < 1; ++x) {
-        scalar4 = -6.000000e+04f;
+        scalar8 = -6.000000e+04f;
       }
-      float scalar5;
-      scalar5 = 5.000000e-01f;
-      float scalar6;
+      float scalar9;
+      scalar9 = 5.000000e-01f;
+      float scalar10;
       for (int32_t x1 = 0; x1 < 1; ++x1) {
-        scalar6 = label_local[m1];
+        scalar10 = label_local[m1];
       }
-      float scalar7;
+      float scalar11;
       for (int32_t x2 = 0; x2 < 1; ++x2) {
-        scalar7 = (scalar5 - scalar6);
+        scalar11 = (scalar9 - scalar10);
       }
       for (int32_t GRAD = 0; GRAD < 3.200000e+01f; ++GRAD) {
         for (int32_t GRAD_INNER = 0; GRAD_INNER < 32; ++GRAD_INNER) {
-          gradient[((GRAD * 32) + GRAD_INNER)] = (scalar7 * training_instance[((GRAD * 32) + GRAD_INNER)]);
+          gradient[((GRAD * 32) + GRAD_INNER)] = (scalar11 * training_instance[((GRAD * 32) + GRAD_INNER)]);
         }
       }
       for (int32_t UPDATE = 0; UPDATE < 3.200000e+01f; ++UPDATE) {
         for (int32_t UPDATE_INNER = 0; UPDATE_INNER < 32; ++UPDATE_INNER) {
-          theta_local[((UPDATE * 32) + UPDATE_INNER)] = (theta_local[((UPDATE * 32) + UPDATE_INNER)] + (scalar4 * gradient[((UPDATE * 32) + UPDATE_INNER)]));
+          theta_local[((UPDATE * 32) + UPDATE_INNER)] = (theta_local[((UPDATE * 32) + UPDATE_INNER)] + (scalar8 * gradient[((UPDATE * 32) + UPDATE_INNER)]));
         }
       }
     }
+  }
+  for (int32_t i3 = 0; i3 < 1024; ++i3) {
+    theta[i3] = theta_local[i3];
   }
 }
 
