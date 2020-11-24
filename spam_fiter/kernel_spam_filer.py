@@ -1,5 +1,7 @@
+import os
 import heterocl as hcl
 from config import *
+from lut import *
 
 def top_spam_filer(dtype=hcl.Int(), target=None):
 
@@ -9,6 +11,44 @@ def top_spam_filer(dtype=hcl.Int(), target=None):
     label = hcl.placeholder((NUM_TRAINING,), "label")
     theta = hcl.placeholder((NUM_FEATURES,), "theta")
 
+    def dotProduct(param, feature, dot):
+
+        with hcl.for_(0, NUM_FEATURES, name="DOT") as i:
+            with hcl.for_(0, PAR_FACTOR, name="DOT_INNER") as j:
+                term = hcl.scalar(param[i * PAR_FACTOR + j] * feature[i * PAR_FACTOR + j])
+                dot.v += term.v
+
+    def useLUT(in_):
+        
+        with hcl.if_(in_ < 0):
+            in_ = -1 * in_
+            index = hcl.scalar(LUT_SIZE - (in_) << (LUTIN_TWIDTH - LUTIN_IWIDTH))
+        with hcl.else_():
+            index = hcl.scalar((in_) << (LUTIN_TWIDTH - LUTIN_IWIDTH))
+
+        return lut[index.v]
+    
+    def Sigmoid(exponent, prob):
+        
+        with hcl.if_(exponent.v > 4):
+            prob.v = 1.0
+        with hcl.elif_(exponent.v < -4):
+            prob.v = 0.0
+        with hcl.else_():
+            prob.v = useLUT(exponent.v)
+
+    def computeGradient(grad, feature, scale):
+    
+        with hcl.for_(0, NUM_FEATURES, name="GRAD") as i:
+            with hcl.for_(0, PAR_FACTOR, name="GRAD_INNER") as j:
+                grad[i * PAR_FACTOR + j] = (scale.v * feature[i * PAR_FACTOR + j])
+
+    def updateParameter(param, grad, scale):
+
+        with hcl.for_(0, NUM_FEATURES / PAR_FACTOR, name="UPDATE") as i:
+            with hcl.for_(0, PAR_FACTOR, name="UPDATE_INNER") as j:
+                param[i * PAR_FACTOR + j] = scale.v * grad[i * PAR_FACTOR + j]
+    
     def compute(theta_local, label_local, training_instance, training_id):
         
         gradient = hcl.compute((NUM_FEATURES,), lambda x:0, name="gradient")
@@ -60,3 +100,13 @@ def top_spam_filer(dtype=hcl.Int(), target=None):
 
     s = hcl.create_schedule([data, label, theta], kernel_spam_filter)
     return hcl.build(s, target=target)
+
+
+os.makedirs('device', exist_ok=True)
+targets = ['vhls', 'aocl']
+
+for target in targets:
+    f = top_spam_filer(target=target)
+    fp = open('device/kernel_' + target + '.cl', 'w')
+    fp.write(f)
+    fp.close()
